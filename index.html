@@ -15,6 +15,7 @@
     color: #fff;
   }
 
+  /* Auto alignment: default centered, slight left nudge for iPhone 14 range */
   .wrap{
     position: relative;
     height: 100%;
@@ -24,6 +25,29 @@
     text-align: center;
     padding: 24px;
     z-index: 2;
+
+    --xShift: 0px;
+    transform: translateX(var(--xShift));
+  }
+
+  /* iPhone 14 (390px wide) — small left nudge */
+  @media (min-width: 380px) and (max-width: 420px){
+    .wrap{ --xShift: -10px; }
+  }
+
+  /* Very small phones */
+  @media (max-width: 360px){
+    .wrap{ --xShift: -14px; }
+  }
+
+  /* Tablets */
+  @media (min-width: 421px) and (max-width: 900px){
+    .wrap{ --xShift: -6px; }
+  }
+
+  /* Large screens */
+  @media (min-width: 901px){
+    .wrap{ --xShift: 0px; }
   }
 
   .stack{
@@ -44,7 +68,11 @@
     transform: translateY(-10px);
   }
 
-  /* Big glossy heart (SVG) */
+  @keyframes fadeUp{
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Big glossy heart (SVG inspiration style) */
   .heart-wrap{
     width: min(54vmin, 430px);
     margin: 6px auto 10px auto;
@@ -68,20 +96,20 @@
   .fade-in{
     opacity: 0;
     transform: translateY(8px);
-    animation: fadeUp 1.6s ease forwards;
+    animation: fadeInUp 1.6s ease forwards;
   }
   .delay-1{ animation-delay: .35s; }
   .delay-2{ animation-delay: .55s; }
   .delay-3{ animation-delay: .65s; }
 
-  @keyframes fadeUp{
+  @keyframes fadeInUp{
     to { opacity: 1; transform: translateY(0); }
   }
 
   /* Calc area moved slightly down */
   .calc{
     width: min(620px, 94vw);
-    margin-top: 10px; /* <-- pushes down a tiny bit */
+    margin-top: 12px;
     display: grid;
     gap: 14px;
     align-items: center;
@@ -120,6 +148,7 @@
     position: relative;
   }
 
+  /* Infinity bigger + beats while visible */
   .infinity{
     font-size: clamp(74px, 10vw, 140px);
     font-weight: 900;
@@ -206,7 +235,6 @@
 
     <h1 class="title">To The Love of My Life 💗</h1>
 
-    <!-- Glossy SVG heart (inspiration-style) -->
     <div class="heart-wrap" aria-label="A big glossy heart">
       <svg viewBox="0 0 512 512" role="img" aria-hidden="true">
         <defs>
@@ -231,7 +259,6 @@
           </radialGradient>
         </defs>
 
-        <!-- Heart base -->
         <path fill="url(#heartGrad)" d="
           M256 470
           C256 470 56 350 56 198
@@ -243,7 +270,6 @@
           Z
         "/>
 
-        <!-- Gloss highlights -->
         <path fill="url(#shine1)" d="
           M256 458
           C256 458 72 346 72 205
@@ -286,14 +312,14 @@
 </div>
 
 <script>
-  // Background hearts: keep them OUT of the center "content area"
-  // so no little heart sits above/near the big heart/title.
+  // Background hearts:
+  // - Keep them OUT of the center area so no small heart sits above the big heart
+  // - Make them 1.5x more total (not faster)
   const heartsLayer = document.getElementById("hearts");
   const heartChars = ["❤️","💗","💖","💘","💕","💞","💓","💝"];
 
   function randomLeftAvoidCenter(){
-    // Avoid the central zone roughly where the content sits (about 28% to 72%).
-    // This removes the annoying small heart that appears near/over the big one.
+    // avoid center band (roughly where content sits)
     let left;
     do { left = Math.random() * 100; }
     while (left > 28 && left < 72);
@@ -307,7 +333,7 @@
 
     const left = randomLeftAvoidCenter();
     const size = 14 + Math.random() * 26;
-    const duration = 4 + Math.random() * 6; // unchanged speed
+    const duration = 4 + Math.random() * 6; // speed unchanged
     const delay = Math.random() * 1.6;
     const drift = (Math.random() * 180 - 90) + "px";
     const spin = (Math.random() * 240 - 120) + "deg";
@@ -323,9 +349,10 @@
     setTimeout(() => h.remove(), (duration + delay) * 1000 + 250);
   }
 
-  // Keep the “more hearts total” behavior (2x) but not faster
-  for (let i = 0; i < 70; i++) spawnHeart();
-  setInterval(() => { spawnHeart(); spawnHeart(); }, 180);
+  // Previously: 70 initial, 2 hearts each tick.
+  // Now: 1.5x => 105 initial, 3 hearts each tick (same tick speed).
+  for (let i = 0; i < 105; i++) spawnHeart();
+  setInterval(() => { spawnHeart(); spawnHeart(); spawnHeart(); }, 180);
 
   // Infinity burst + auto hide after 3 seconds
   const btn = document.getElementById("calcBtn");
