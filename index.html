@@ -43,7 +43,7 @@
   }
   @keyframes titleIn{ to { opacity: 1; transform: translateY(0); } }
 
-  /* ===== BIG HEART (now gradient + shine) ===== */
+  /* ===== BIG HEART (gradient + shine) ===== */
   .big-heart{
     width: min(46vmin, 340px);
     aspect-ratio: 1/1;
@@ -53,7 +53,6 @@
     animation: heartbeat 1.15s infinite;
     border-radius: 16px;
 
-    /* Gradient fill */
     background:
       radial-gradient(circle at 30% 28%, rgba(255,255,255,.55), rgba(255,255,255,0) 40%),
       radial-gradient(circle at 65% 70%, rgba(255,255,255,.22), rgba(255,255,255,0) 55%),
@@ -70,7 +69,6 @@
     height: 100%;
     position: absolute;
     border-radius: 50%;
-
     background:
       radial-gradient(circle at 30% 28%, rgba(255,255,255,.55), rgba(255,255,255,0) 40%),
       radial-gradient(circle at 65% 70%, rgba(255,255,255,.22), rgba(255,255,255,0) 55%),
@@ -79,7 +77,6 @@
   .big-heart::before{ top: -50%; left: 0; }
   .big-heart::after { top: 0; left: -50%; }
 
-  /* Shine overlay */
   .big-heart .shine{
     position:absolute;
     inset: -8%;
@@ -98,7 +95,6 @@
     75%      { transform: rotate(45deg) scale(1.18); }
   }
 
-  /* ===== Calculator block (bigger text + bigger button) ===== */
   .stack{
     display: grid;
     justify-items: center;
@@ -141,26 +137,37 @@
   .btn:active{ transform: translateY(1px) scale(.99); }
 
   .result{
-    min-height: 74px;
+    min-height: 92px;
     display: grid;
     place-items: center;
+    position: relative;
   }
 
-  /* ===== Infinity bigger + beats after showing ===== */
+  /* ===== Infinity bigger + beats while visible ===== */
   .infinity{
-    font-size: clamp(70px, 9vw, 120px);
+    font-size: clamp(74px, 10vw, 140px);
     font-weight: 900;
     line-height: 1;
     opacity: 0;
-    transform: scale(.85);
+    transform: scale(.75);
     text-shadow: 0 0 30px rgba(255,255,255,0.40);
-    transition: opacity .35s ease, transform .35s ease;
+    transition: opacity .35s ease, transform .35s ease, filter .35s ease;
+    filter: drop-shadow(0 0 0 rgba(255,255,255,0));
   }
+
   .infinity.show{
     opacity: 1;
     transform: scale(1);
     animation: infBeat 1.1s infinite;
+    filter: drop-shadow(0 0 18px rgba(255,255,255,.55));
   }
+
+  .infinity.hide{
+    opacity: 0;
+    transform: scale(.85);
+    filter: drop-shadow(0 0 0 rgba(255,255,255,0));
+  }
+
   @keyframes infBeat{
     0%, 100% { transform: scale(1); }
     25%      { transform: scale(1.10); }
@@ -168,7 +175,34 @@
     75%      { transform: scale(1.14); }
   }
 
-  /* ===== Background hearts (more total, not faster) ===== */
+  /* ===== Burst particles around infinity ===== */
+  .burst{
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+  }
+
+  .particle{
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    opacity: 0;
+    transform: translate(0,0) scale(.6);
+    background: rgba(255,255,255,.95);
+    filter: drop-shadow(0 0 10px rgba(255,255,255,.65));
+    animation: pop 700ms ease-out forwards;
+  }
+
+  @keyframes pop{
+    0%   { opacity: 0; transform: translate(0,0) scale(.6); }
+    12%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.05); }
+  }
+
+  /* ===== Background hearts ===== */
   .hearts{
     position: fixed;
     inset: 0;
@@ -207,7 +241,9 @@
     <div class="calc">
       <div class="calc-label">Calculate how much i love you</div>
       <button class="btn" id="calcBtn">Calculate</button>
-      <div class="result">
+
+      <div class="result" id="resultBox">
+        <div class="burst" id="burst"></div>
         <div class="infinity" id="infinity">∞</div>
       </div>
     </div>
@@ -215,7 +251,7 @@
 </div>
 
 <script>
-  // More hearts total (about 2x) WITHOUT making them faster:
+  // Background hearts (2x more total, not faster)
   const heartsLayer = document.getElementById("hearts");
   const heartChars = ["❤️","💗","💖","💘","💕","💞","💓","💝"];
 
@@ -224,10 +260,10 @@
     h.className = "float-heart";
     h.textContent = heartChars[Math.floor(Math.random() * heartChars.length)];
 
-    const left = Math.random() * 100;              // vw
-    const size = 14 + Math.random() * 26;          // px
-    const duration = 4 + Math.random() * 6;        // sec (same speed range as before)
-    const delay = Math.random() * 1.6;             // sec
+    const left = Math.random() * 100;
+    const size = 14 + Math.random() * 26;
+    const duration = 4 + Math.random() * 6; // unchanged speed
+    const delay = Math.random() * 1.6;
     const drift = (Math.random() * 180 - 90) + "px";
     const spin = (Math.random() * 240 - 120) + "deg";
 
@@ -242,24 +278,68 @@
     setTimeout(() => h.remove(), (duration + delay) * 1000 + 250);
   }
 
-  // 2x more hearts ON SCREEN:
-  // - initial burst doubled
-  // - interval spawns 2 hearts per tick (same tick speed)
   for (let i = 0; i < 70; i++) spawnHeart();
+  setInterval(() => { spawnHeart(); spawnHeart(); }, 180);
 
-  setInterval(() => {
-    spawnHeart();
-    spawnHeart();
-  }, 180);
-
-  // Button shows infinity
+  // Infinity burst + auto hide after 3 seconds
   const btn = document.getElementById("calcBtn");
   const inf = document.getElementById("infinity");
+  const burst = document.getElementById("burst");
+
+  let hideTimer = null;
+
+  function makeBurst() {
+    // clear old particles
+    burst.innerHTML = "";
+
+    // create particles
+    const count = 22;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement("div");
+      p.className = "particle";
+
+      const angle = (Math.PI * 2) * (i / count);
+      const radius = 46 + Math.random() * 34;
+
+      const dx = Math.cos(angle) * radius;
+      const dy = Math.sin(angle) * radius;
+
+      p.style.setProperty("--dx", dx.toFixed(1) + "px");
+      p.style.setProperty("--dy", dy.toFixed(1) + "px");
+
+      // slight random size variation
+      const s = 6 + Math.random() * 6;
+      p.style.width = s + "px";
+      p.style.height = s + "px";
+
+      // sometimes use a soft pink sparkle
+      if (Math.random() < 0.4) p.style.background = "rgba(255,170,200,.95)";
+
+      burst.appendChild(p);
+    }
+  }
 
   btn.addEventListener("click", () => {
+    // show infinity
+    inf.classList.remove("hide");
     inf.classList.add("show");
+
+    // burst
+    makeBurst();
+
+    // button feedback
     btn.textContent = "Calculated ❤️";
     setTimeout(() => (btn.textContent = "Calculate"), 1600);
+
+    // reset timer
+    if (hideTimer) clearTimeout(hideTimer);
+
+    // hide after 3 seconds
+    hideTimer = setTimeout(() => {
+      inf.classList.remove("show");
+      inf.classList.add("hide");
+      burst.innerHTML = "";
+    }, 3000);
   });
 </script>
 
